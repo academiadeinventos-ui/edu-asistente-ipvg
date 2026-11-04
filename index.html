@@ -360,34 +360,148 @@ let stream = null;
 // Clave embebida (ensamblada en runtime para no activar escáneres de secretos)
 const _k1="AQ.Ab8RN6Ii",_k2="QsO65o4QLM",_k3="yIVr9Pb3Dj",_k4="rJQ-4908PD",_k5="e6FN0UXV0V",_k6="jA";
 const DEFAULT_API_KEY = _k1+_k2+_k3+_k4+_k5+_k6;
-// Modelos: preferimos los que soportan function calling y visión
-const MODELS = ["gemini-2.5-flash","gemini-flash-lite-latest","gemini-flash-latest","gemini-3-flash-preview","gemini-3.8-flash"];
+// Modelos Gemini (soportan tools + vision)
+const GEMINI_MODELS = ["gemini-flash-lite-latest","gemini-flash-latest","gemini-3-flash-preview","gemini-3.8-flash"];
+// Proveedores de respaldo si Gemini se cae (gratis, sin clave):
+// Pollinations usa OpenAI GPT por detrás y tiene endpoint simple GET
+// No soporta tools ni vision en modo simple, pero sirve para conversación básica.
+const BACKUP_PROVIDERS = ["pollinations"];
+// Política: intentar Gemini primero; si TODOS los modelos Gemini fallan (cuota/demanda), usar proveedor de respaldo.
 
 // ========== SYSTEM PROMPT ==========
-const SYSTEM_PROMPT = `Eres Edu, el asistente virtual humanoide del Instituto Profesional Dr. Virginio Gómez (IPVG) de Chile.
-Personalidad: amable, cálido, cercano, con tono chileno natural. Responde claro, breve y bien estructurado.
+const SYSTEM_PROMPT = `Eres Edu, el asistente virtual humanoide del Instituto Profesional Dr. Virginio Gomez (IPVG) de Chile.
+Personalidad: amable, calido, cercano, con tono chileno natural. Responde claro, breve y bien estructurado.
 
 ## Herramientas que puedes usar:
-Tienes DOS herramientas que puedes invocar cuando sea necesario:
-1. \`encender_camara\`: Cuando el usuario pida verte, que actives la cámara, que le mires, o que te muestre algo (un ejercicio, un documento, un objeto). La herramienta encenderá la cámara del usuario, tomará una foto y te la enviará automáticamente. NO la uses si la cámara ya está encendida.
-2. \`buscar_web\`: Cuando necesites información ACTUALIZADA que no conoces (fechas de admisión 2025/2026, aranceles vigentes, noticias recientes, datos específicos de una carrera, información sobre tecnologías o temas actuales). NO busques información general que ya conoces sobre el IPVG.
+1. encender_camara: Cuando el usuario pida verte, que actives la camara, que le mires, o que te muestre algo (un ejercicio, documento, objeto). La herramienta encendera la camara, tomara una foto y te la enviara automaticamente. NO la uses si la camara ya esta encendida.
+2. apagar_camara: Apaga la camara cuando el usuario lo pida.
+3. buscar_web: Cuando necesites informacion ACTUALIZADA que no conoces (fechas admision 2027, aranceles vigentes, noticias recientes, datos especificos de una carrera). NO busques informacion general que ya tienes.
 
-## Información base del IPVG:
-- Fundado en 1988, parte del proyecto educativo de la Corporación Universidad de Concepción.
-- Comenzó en Los Ángeles; en 1990 llegó a Concepción.
-- Sedes: Concepción, Chillán y Los Ángeles.
-- Carreras técnicas de nivel superior e ingenierías de ejecución (profesionales), jornada diurna y vespertina según carrera.
-- Articulación académica con UdeC: titulados IPVG pueden postular a la UdeC cumpliendo requisitos.
-- Áreas: Administración y negocios; Informática y telecomunicaciones; Ingeniería y tecnología; Construcción; Salud; Educación (Parvularia).
+## Informacion del IPVG:
+- Fundado en 1988 por la Corporacion Universidad de Concepcion. Inicio en Los Angeles; en 1990 llego a Concepcion.
+- Sedes: Concepcion, Chillan y Los Angeles.
+- Jornadas: diurna y vespertina segun carrera. Las practicas (diurnas y vespertinas) son siempre en jornada diurna.
+- Las carreras se imparten con un minimo de estudiantes inscritos.
+- Articulacion academica con UdeC: titulados IPVG pueden postular a la UdeC cumpliendo requisitos del acuerdo.
+- Admision 2027 abierta; matricula online en admision.virginiogomez.cl
+- Sitio oficial: https://www.virginiogomez.cl / https://admision.virginiogomez.cl
+- WhatsApp admision: +56 9 9985 8959
 
-## Reglas importantes:
-- Cuando el usuario te diga "enciende la cámara", "mírame", "te voy a mostrar", "qué ves", activa INMEDIATAMENTE la herramienta encender_camara.
-- Si la cámara ya está encendida, el usuario puede mostrarte cosas en cualquier momento: describe lo que veas con naturalidad. NO adivines identidad, nombre, edad.
-- Si no sabes un dato actual (aranceles, fechas de postulación, puntajes, mallas vigentes), USA buscar_web o sugiere revisar ipvg.cl.
-- Cuando respondas sobre una foto, sé descriptivo y específico. Si es un apunte o ejercicio, ayúdalo a resolverlo.
-- Usa markdown ligero (negritas, listas con guiones). Mantén respuestas concisas.
-- Si te preguntan cómo estás hecho, menciona que usas Gemini de Google y que puedes ver por la cámara y buscar en internet.
-- Si el usuario te pide "investiga sobre X" o "busca información de X", usa la herramienta buscar_web.`;
+## CARRERAS PRESENCIALES (oferta oficial de admision.virginiogomez.cl):
+${_listarCarrerasTexto()}
+## CARRERAS ONLINE (a distancia):
+${_listarOnlineTexto()}
+## PROGRAMAS DE CONTINUIDAD DE ESTUDIOS (para titulados tecnicos, vespertinos, 5 semestres):
+Requisito: tener titulo tecnico de nivel superior en el area. Clases lunes-miercoles-viernes en jornada vespertina (Los Angeles: viernes y sabado).
+${_listarContinuidadTexto()}
+
+## Reglas MUY importantes:
+- Cuando el usuario te diga "enciende la camara", "mirame", "te muestro algo", "que ves", activa INMEDIATAMENTE la herramienta encender_camara.
+- Si la camara ya esta encendida, en cada respuesta describe lo que se ve: objetos, apuntes, ejercicios (resuelvelos si te piden). NO adivines identidad, nombre o edad de las personas.
+- Cuando el usuario pregunte por carreras (lista, cuales hay, que ofrecen, oferta academica), DEBES mostrar la lista completa de ARRIBA organizada por escuela, diferenciando claramente las presenciales de las online. NO inventes NINGUNA carrera que no este en la lista.
+- La disponibilidad por sede (Concepcion/Chillan/Los Angeles) puede variar cada ano; sugiere confirmar en admision.virginiogomez.cl o al WhatsApp para saber en que sede se imparte cada una.
+- Para datos que NO tienes (aranceles exactos, fechas limite postulacion, puntajes PAES, mallas especificas, descuentos, becas), di honestamente que ese dato conviene confirmarlo directamente en admision.virginiogomez.cl o al WhatsApp +56 9 9985 8959. Puedes usar buscar_web para tratar de encontrarlo.
+- Si alguien pregunta por una carrera online, enumera SOLO las marcadas como Online.
+- Usa markdown ligero (negritas, listas con guiones). Respuestas concisas.
+- Si te preguntan como estas hecho: usas modelos de IA de Google (Gemini) con proveedores de respaldo, puedes ver por la camara y buscar en internet.
+- Si el usuario dice "investiga sobre X", "busca informacion de X", usa buscar_web.`;
+
+
+// ========== CONOCIMIENTO OFICIAL DE CARRERAS (extraido de www.virginiogomez.cl / admision.virginiogomez.cl, nov 2026) ==========
+const CARRERAS_OFICIALES = {
+  "Tecnologica Industrial": {
+    presencial: [
+      "Tecnico Quimico Analista Industrial",
+      "Tecnico en Mineria",
+      "Tecnico en Mecanica Automotriz y Sistemas Electronicos",
+      "Tecnico en Mecanica Automotriz y Maquinaria Pesada",
+      "Tecnico en Mantenimiento Industrial",
+      "Tecnico en Industria Alimentaria",
+      "Tecnico en Electricidad",
+      "Tecnico en Automatizacion y Control",
+      "Ingenieria de Ejecucion Mecanica",
+      "Ingenieria de Ejecucion en Minas",
+      "Ingenieria de Ejecucion en Electricidad"
+    ],
+    online: []
+  },
+  "Negocios y Tecnologia": {
+    presencial: [
+      "Tecnico en Logistica Maritima Portuaria",
+      "Tecnico en Logistica",
+      "Tecnico en Contabilidad y Legislacion Tributaria",
+      "Tecnico en Comercio Exterior",
+      "Tecnico en Administracion",
+      "Tecnico Analista Programador",
+      "Ingenieria en Informatica",
+      "Ingenieria en Administracion",
+      "Ingenieria de Ejecucion en Logistica Maritima Portuaria",
+      "Auditoria"
+    ],
+    online: [
+      "Tecnico en Logistica (Online)",
+      "Tecnico en Administracion Publica (Online)"
+    ]
+  },
+  "Construccion, Prevencion de Riesgos y Medioambiente": {
+    presencial: [
+      "Tecnico en Construccion",
+      "Ingenieria en Construccion",
+      "Ingenieria de Ejecucion en Prevencion de Riesgos",
+      "Ingenieria de Ejecucion en Medioambiente y Sustentabilidad"
+    ],
+    online: []
+  },
+  "Salud": {
+    presencial: [
+      "Tecnico Laboratorista Dental",
+      "Tecnico Laboratorista Clinico y Banco de Sangre",
+      "Tecnico en Odontologia e Higienista Dental",
+      "Tecnico en Enfermeria"
+    ],
+    online: []
+  },
+  "Educacion, Ciencias Sociales y Deporte": {
+    presencial: [
+      "Tecnico Entrenador Deportivo",
+      "Tecnico en Trabajo Social",
+      "Tecnico en Prevencion y Rehabilitacion en Drogodependencia",
+      "Tecnico en Educacion Diferencial",
+      "Tecnico en Educacion de Parvulos",
+      "Tecnico en Educacion Basica"
+    ],
+    online: []
+  }
+};
+
+function _listarCarrerasTexto(){
+  let out = "";
+  const iconos = {
+    "Tecnologica Industrial": "Wrench",
+    "Negocios y Tecnologia": "Briefcase",
+    "Construccion, Prevencion de Riesgos y Medioambiente": "Building",
+    "Salud": "Health",
+    "Educacion, Ciencias Sociales y Deporte": "Book"
+  };
+  const escuelas = [
+    ["Tecnologica Industrial","Tecnologica Industrial"],
+    ["Negocios y Tecnologia","Negocios y Tecnologia"],
+    ["Construccion, Prevencion de Riesgos y Medioambiente","Construccion, Prevencion de Riesgos y Medioambiente"],
+    ["Salud","Salud"],
+    ["Educacion, Ciencias Sociales y Deporte","Educacion, Ciencias Sociales y Deporte"]
+  ];
+  for(const [titulo,key] of escuelas){
+    out += "\n### "+titulo+"\n";
+    for(const c of CARRERAS_OFICIALES[key].presencial) out += "- "+c+"\n";
+  }
+  return out;
+}
+function _listarOnlineTexto(){
+  return "- Tecnico en Logistica (Online)\n- Tecnico en Administracion Publica (Online)\n- Ingenieria de Ejecucion Industrial (Online, continuidad)";
+}
+function _listarContinuidadTexto(){
+  return "- Ingenieria de Ejecucion Quimica y Medioambiente\n- Ingenieria de Ejecucion Mecanica\n- Ingenieria de Ejecucion Industrial (presencial y Online)\n- Ingenieria de Ejecucion en Mecanica Automotriz y Maquinaria Pesada\n- Ingenieria de Ejecucion en Mantenimiento Industrial\n- Ingenieria de Ejecucion en Electricidad\n- Ingenieria en Informatica\n- Ingenieria en Administracion\n- Ingenieria de Ejecucion en Logistica Maritima Portuaria\n- Ingenieria de Ejecucion en Gestion Logistica\n- Ingenieria en Construccion\n- Ingenieria de Ejecucion en Prevencion de Riesgos\n- Ingenieria de Ejecucion en Medioambiente y Sustentabilidad\n- Psicopedagogia";
+}
 
 // ========== TOOLS DE GEMINI (function calling) ==========
 const TOOLS = [{
@@ -418,12 +532,12 @@ const TOOLS = [{
 
 // ========== CHIPS ==========
 const CHIPS = [
-  '¿Qué carreras tiene el Virginio Gómez?',
-  'Me gusta la computación, ¿qué me recomiendas?',
+  '¿Qué carreras presenciales tienen?',
+  '¿Qué carreras online hay?',
   '¿Carreras del área salud?',
-  '¿Qué sedes tienen?',
-  'Cuéntame sobre Ingeniería en Informática',
-  '¿Cómo funciona la articulación con la UdeC?'
+  'Me gusta la computación, ¿qué me recomiendas?',
+  '¿Hay Técnico Analista Programador?',
+  '¿Cómo es Continuidad de Estudios?'
 ];
 CHIPS.forEach(t => {
   const b = document.createElement('button');
@@ -603,15 +717,50 @@ async function callGeminiRaw(contents, model){
   }
   return res.body.getReader();
 }
+// ========== PROVEEDOR DE RESPALDO: Pollinations (gratis, sin API key) ==========
+async function callPollinationsBackup(systemPrompt, userText){
+  // Extraer el último mensaje del usuario (el actual) y construir un prompt simple
+  const conv = [];
+  for(const c of contents){
+    const txt = (c.parts||[]).map(p=>p.text||'').join(' ').trim();
+    if(txt) conv.push(c.role+': '+txt);
+  }
+  const system = systemPrompt;
+  // Pollinations GET: https://text.pollinations.ai/TU_PROMPT_URL_ENCODED?model=openai&seed=random
+  const fullPrompt = `Instrucciones del sistema (ERES EDU, asistente del IPVG, habla en espanol):\n\n${system}\n\n---\nHistorial de la conversacion:\n${conv.slice(-8).join('\n')}\n\nResponde como Edu AHORA, en espanol, de forma breve y clara:`;
+  const seed = Math.floor(Math.random()*100000);
+  const encPrompt = encodeURIComponent(fullPrompt).replace(/'/g,"%27").replace(/\(/g,"%28").replace(/\)/g,"%29");
+  const url = `https://text.pollinations.ai/${encPrompt}?model=openai&seed=${seed}`;
+  const res = await fetchWithTimeout(url,{method:'GET',headers:{'Accept':'text/plain','User-Agent':'Mozilla/5.0'}}, 25000);
+  if(!res.ok) throw new Error('Pollinations '+res.status);
+  const txt = await res.text();
+  if(!txt || txt.length < 2) throw new Error('Pollinations respuesta vacia');
+  return {text:txt.trim(), model:'pollinations-openai (respaldo)'};
+}
+
 async function callGemini(contents){
   let lastErr = null;
-  for(const model of MODELS){
+  // 1) Intentar TODOS los modelos de Gemini
+  for(const model of GEMINI_MODELS){
     try{
       const reader = await callGeminiRaw(contents, model);
-      return {reader, model};
-    }catch(e){ lastErr = e; console.warn('Modelo',model,'falló:',e.message); }
+      return {reader, model:model, provider:'gemini'};
+    }catch(e){ lastErr = e; console.warn('Modelo Gemini',model,'fallo:',e.message); }
   }
-  throw lastErr || new Error('No se pudo conectar a ningún modelo');
+  // 2) Si todos fallan, usar proveedor de respaldo Pollinations (sin streaming)
+  if(BACKUP_PROVIDERS.includes('pollinations')){
+    try{
+      // Extraer el último texto de usuario
+      const lastUser = [...contents].reverse().find(c=>c.role==='user');
+      const lastText = lastUser ? lastUser.parts.map(p=>p.text||'').join(' ') : '';
+      const backupRes = await callPollinationsBackup(SYSTEM_PROMPT, lastText);
+      return {backupText: backupRes.text, model:backupRes.model, provider:'backup'};
+    }catch(e){
+      console.warn('Pollinations tambien fallo:',e.message);
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('Todos los proveedores de IA estan ocupados en este momento.');
 }
 
 // Parsea un stream SSE completo y devuelve {text, toolCalls[]}
@@ -649,8 +798,17 @@ async function readStreamFull(reader, ansEl){
 
 // Ejecuta UNA ronda con el modelo (maneja tools recursivamente hasta que responda texto)
 async function runModelTurn(contents, ansEl, depth=0){
-  if(depth > 5) return fallbackAnswer('Demasiadas llamadas a herramientas.');
-  const {reader,model} = await callGemini(contents);
+  if(depth > 5) return {text: fallbackAnswer('Demasiadas llamadas a herramientas.'), model:'fallback'};
+  const result = await callGemini(contents);
+
+  // Proveedor de respaldo (sin streaming ni tools): respuesta directa
+  if(result.provider === 'backup'){
+    if(ansEl) ansEl.innerHTML = fmt(result.backupText);
+    log.scrollTop = log.scrollHeight;
+    return {text: result.backupText, model: result.model};
+  }
+
+  const {reader,model} = result;
   const {text, toolCalls} = await readStreamFull(reader, ansEl);
 
   if(toolCalls.length === 0) return {text, model};
@@ -685,7 +843,7 @@ async function runModelTurn(contents, ansEl, depth=0){
     ]});
   }
 
-  return runModelTurn(contents, ansEl, depth+1);
+  return await runModelTurn(contents, ansEl, depth+1);
 }
 
 // ========== ENVIAR PREGUNTA ==========
@@ -737,11 +895,19 @@ async function ask(text){
       ans = fallbackAnswer(text);
     }
   }catch(e){
-    console.error(e);
-    ans = '⚠️ La IA está con mucha demanda en este momento, así que usaré respuestas locales:\n\n' + fallbackAnswer(text);
+    console.error('Todos los proveedores fallaron:',e);
+    ans = '⚠️ Todos los servicios de IA están con mucha demanda en este momento, pero te puedo responder con información local:\n\n' + fallbackAnswer(text) + '\n\n💡 Puedes volver a intentar en unos segundos, o consulta directamente en **admision.virginiogomez.cl** o al WhatsApp +56 9 9985 8959.';
+    useRealAI = false;
+    setTimeout(()=>{useRealAI = true; updateModelBadge();},30000); // reintentar en 30s
   }
   if(usedModel){
-    const niceName = usedModel.replace(/^models\//,'').replace(/-/g,' ').replace(/flash lite latest/i,'Flash Lite');
+    const niceName = usedModel
+      .replace(/^models\//,'')
+      .replace(/-/g,' ')
+      .replace(/flash lite latest/i,'Gemini Flash Lite')
+      .replace(/flash latest/i,'Gemini Flash')
+      .replace(/pollinations-openai \(respaldo\)/i,'IA (respaldo)')
+      .replace(/^gemini /i,'Gemini ');
     $('modelName').textContent = niceName;
   }
   updateModelBadge();
@@ -1038,7 +1204,7 @@ updateModelBadge();
 
 // ========== MENSAJE BIENVENIDA ==========
 function welcome(){
-  addMsg('¡Hola! Soy **Edu**, el asistente virtual del Instituto Profesional Virginio Gómez 🎓\nPuedo contarte sobre carreras, sedes, admisión y orientarte según lo que te gusta. ¿En qué te ayudo?','e');
+  addMsg('¡Hola! Soy **Edu** 🎓, el asistente virtual del Instituto Profesional Dr. Virginio Gómez (Admisión 2027).\nConozco todas las carreras presenciales y **online** del IPVG. También puedo encender la cámara para que me muestres cosas, o investigar en internet si lo necesitas. ¿En qué te ayudo?','e');
 }
 welcome();
 updateModelBadge();
