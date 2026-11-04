@@ -321,6 +321,7 @@ form.input-row{display:flex;gap:6px;align-items:flex-end}
     </form>
     <div class="toolbar">
       <button class="tb" id="voiceToggle" type="button">🔊 Voz activada</button>
+      <button class="tb" id="optimusBtn" type="button" title="Voz estilo Optimus Prime">🤖 Voz: Edu</button>
       <button class="tb" id="convToggle" type="button">🎤 Modo conversación</button>
       <button class="tb" id="clearBtn" type="button">🗑️ Limpiar chat</button>
     </div>
@@ -966,6 +967,18 @@ function mouthLoop(on){
 }
 mouthLoop(false);
 
+// ========== CONFIG DE VOZ ==========
+let optimusMode = false; // false = voz normal, true = Optimus Prime
+let audioCtx = null, optimusNodes = null;
+
+function ensureAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+    catch(e){ audioCtx = null; }
+  }
+  return audioCtx;
+}
+
 function speak(t){
   if(!voz || !('speechSynthesis' in window)){
     statusText.textContent='Listo para conversar';
@@ -978,27 +991,97 @@ function speak(t){
   const u = new SpeechSynthesisUtterance(clean);
   u.lang = 'es-CL';
   const voices = speechSynthesis.getVoices();
-  const v = voices.find(x=>/es[-_]?(CL|ES|MX|AR)/i.test(x.lang)) || voices.find(x=>/^es/i.test(x.lang));
+  // Buscar voces masculinas profundas disponibles
+  let v = voices.find(x=>/es[-_]?(CL|ES|MX|AR)/i.test(x.lang) && /(male|hombre|jorge|diego|pablo|carlos|david|juan|enrique|ra[uv]l|alberto)/i.test(x.name));
+  if(!v) v = voices.find(x=>/es[-_]?(CL|ES|MX|AR)/i.test(x.lang));
+  if(!v) v = voices.find(x=>/^es/i.test(x.lang));
   if(v) u.voice = v;
-  u.pitch = .95; u.rate = 1.05;
+
+  if(optimusMode){
+    // Voz Optimus Prime: grave, lenta, autoritaria
+    u.pitch = 0.45;   // muy grave
+    u.rate  = 0.78;   // habla más despacio
+    u.volume= 1.0;
+  } else {
+    u.pitch = 0.95;
+    u.rate  = 1.05;
+  }
+
   u.onstart = ()=>{
     speaking=true;
     try{rec && rec.abort()}catch(e){}
-    statusText.textContent='Edu está hablando…';
+    statusText.textContent = optimusMode ? '🤖 Edu habla…' : 'Edu está hablando…';
     mouthLoop(true);
+    // Efecto robótico por Web Audio si estamos en modo Optimus
+    if(optimusMode) applyOptimusEffect();
   };
   u.onend = u.onerror = ()=>{
     speaking=false;
     statusText.textContent='Listo para conversar';
     mouthLoop(false);
+    stopOptimusEffect();
     setTimeout(listen, 300);
   };
   speechSynthesis.speak(u);
 }
+
+function applyOptimusEffect(){
+  // El audio del speechSynthesis sale al output, podemos añadir un filtro de audio del
+  // propio elemento <video>/<audio> pero speechSynthesis no se expone como fuente.
+  // Simulamos el "efecto Prime" con un zumbido grave sutil de fondo y cambios visuales en el robot
+  try{
+    const ac = ensureAudioCtx();
+    if(!ac) return;
+    if(ac.state === 'suspended') ac.resume();
+    // Zumbido grave que acompaña la voz (110Hz = A2, tono grave de camión/transformers)
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    const filter = ac.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 220;
+    osc.type = 'sawtooth';
+    osc.frequency.value = 55;
+    gain.gain.value = 0.025; // sutil, no tapa la voz
+    osc.connect(filter); filter.connect(gain); gain.connect(ac.destination);
+    osc.start();
+    optimusNodes = {osc,gain,filter,ac};
+    // Glow azul intenso en la cara cuando habla Prime
+    document.documentElement.style.setProperty('--glow','#2a68ff');
+  }catch(e){ console.warn('efecto audio fallo',e); }
+}
+function stopOptimusEffect(){
+  try{
+    if(optimusNodes){
+      const {osc,gain} = optimusNodes;
+      gain.gain.value = 0;
+      setTimeout(()=>{ try{osc.stop();}catch(e){} }, 200);
+      optimusNodes = null;
+    }
+    document.documentElement.style.setProperty('--glow','#7cc4ff');
+  }catch(e){}
+}
+
 $('voiceToggle').onclick = ()=>{
   voz = !voz;
   $('voiceToggle').textContent = voz ? '🔊 Voz activada' : '🔇 Voz silenciada';
-  if(!voz && window.speechSynthesis){ speechSynthesis.cancel(); mouthLoop(false); }
+  if(!voz && window.speechSynthesis){ speechSynthesis.cancel(); mouthLoop(false); stopOptimusEffect(); }
+};
+
+// Toggle Voz Optimus Prime
+$('optimusBtn').onclick = ()=>{
+  optimusMode = !optimusMode;
+  $('optimusBtn').textContent = optimusMode ? '🤖 Voz: Optimus Prime' : '🤖 Voz: Edu';
+  $('optimusBtn').classList.toggle('on', optimusMode);
+  if(optimusMode){
+    ensureAudioCtx();
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    // Prueba de voz al activar
+    if(voz && !speaking){
+      setTimeout(()=>speak('Autobots, transformen y… avancen. Soy Edu, y te ayudaré a elegir tu carrera en el Instituto Virginio Gómez.'), 250);
+    }
+  } else {
+    if(speaking){ speechSynthesis.cancel(); stopOptimusEffect(); }
+  }
 };
 
 // ========== MICRÓFONO ==========
