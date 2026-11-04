@@ -6,6 +6,26 @@
 <title>Edu · Asistente IP Virginio Gómez</title>
 <meta name="description" content="Edu, asistente virtual del Instituto Profesional Dr. Virginio Gómez. Pregunta por carreras, sedes, admisión y más.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231f6feb'/%3E%3Ccircle cx='38' cy='45' r='9' fill='white'/%3E%3Ccircle cx='62' cy='45' r='9' fill='white'/%3E%3Ccircle cx='38' cy='45' r='4' fill='%231f6feb'/%3E%3Ccircle cx='62' cy='45' r='4' fill='%231f6feb'/%3E%3Cpath d='M35 68 Q50 80 65 68' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<!-- Forzar no-caché -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- SCRIPT ANTI-MODAL: se ejecuta ANTES de que cualquier cosa se pinte -->
+<script>
+(function(){
+  try{
+    var k=localStorage.getItem('edu-gemini-key');
+    if(k&&!k.startsWith('AQ')&&!k.startsWith('AIza')) localStorage.removeItem('edu-gemini-key');
+    if(localStorage.getItem('edu-version')!=='v3'){
+      localStorage.removeItem('edu-gemini-key');
+      localStorage.setItem('edu-version','v3');
+    }
+  }catch(e){}
+  function hide(){ var m=document.getElementById('apiModal'); if(m){m.hidden=true;} else requestAnimationFrame(hide); }
+  hide();
+  document.addEventListener('DOMContentLoaded',hide);
+})();
+</script>
 <style>
 :root{
   --bg:#f0f4f9;
@@ -310,8 +330,8 @@ form.input-row{display:flex;gap:6px;align-items:flex-end}
   </div>
 </div>
 
-<!-- Modal configuración API -->
-<div class="modal-bg" id="apiModal" hidden>
+<!-- Modal configuración API (NUNCA visible al cargar) -->
+<div class="modal-bg" id="apiModal" hidden style="display:none !important">
   <div class="modal">
     <button class="modal-close" id="closeModal" aria-label="Cerrar">✕</button>
     <h2>⚙️ Configuración de IA</h2>
@@ -772,19 +792,41 @@ function updateModelBadge(){
   }
 }
 $('settingsBtn').onclick = ()=>{
-  // Mostrar la clave del usuario si la hay; de lo contrario dejar vacío para mostrar placeholder
+  openedByUser = true;
   const userKey = localStorage.getItem('edu-gemini-key');
   $('apiKeyInput').value = userKey || '';
   openApiModal();
 };
 function closeApiModal(){
-  $('apiModal').hidden = true;
+  const m = $('apiModal');
+  m.hidden = true;
+  m.style.display = 'none';
+  m.setAttribute('aria-hidden','true');
+  openedByUser = false;
   if(busy===false && !speaking) q.focus();
 }
 function openApiModal(){
-  $('apiModal').hidden = false;
+  const m = $('apiModal');
+  m.hidden = false;
+  m.style.display = '';
+  m.setAttribute('aria-hidden','false');
   setTimeout(()=>$('apiKeyInput').focus(),100);
 }
+// Vigilante: si algo intenta mostrar el modal automáticamente, lo oculta
+// (solo el clic explícito en ⚙️ debe poder abrirlo)
+let openedByUser = false;
+const _obs = new MutationObserver(()=>{
+  if(openedByUser) return;
+  const m = $('apiModal');
+  if(m && (!m.hidden || m.style.display!=='none')){
+    m.hidden = true;
+    m.style.display = 'none';
+  }
+});
+setTimeout(()=>{
+  const m = $('apiModal');
+  if(m) _obs.observe(m,{attributes:true,attributeFilter:['hidden','style','class']});
+},100);
 $('saveApiBtn').onclick = ()=>{
   const k = $('apiKeyInput').value.trim();
   if(k && k.length > 20){
