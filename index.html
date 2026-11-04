@@ -16,9 +16,9 @@
   try{
     var k=localStorage.getItem('edu-gemini-key');
     if(k&&!k.startsWith('AQ')&&!k.startsWith('AIza')) localStorage.removeItem('edu-gemini-key');
-    if(localStorage.getItem('edu-version')!=='v3'){
+    if(localStorage.getItem('edu-version')!=='v4'){
       localStorage.removeItem('edu-gemini-key');
-      localStorage.setItem('edu-version','v3');
+      localStorage.setItem('edu-version','v4');
     }
   }catch(e){}
   function hide(){ var m=document.getElementById('apiModal'); if(m){m.hidden=true;} else requestAnimationFrame(hide); }
@@ -360,31 +360,61 @@ let stream = null;
 // Clave embebida (ensamblada en runtime para no activar escáneres de secretos)
 const _k1="AQ.Ab8RN6Ii",_k2="QsO65o4QLM",_k3="yIVr9Pb3Dj",_k4="rJQ-4908PD",_k5="e6FN0UXV0V",_k6="jA";
 const DEFAULT_API_KEY = _k1+_k2+_k3+_k4+_k5+_k6;
-// Modelos en orden de preferencia (cascada: si uno falla por cuota/demanda, prueba el siguiente)
-const MODELS = ["gemini-flash-lite-latest","gemini-flash-latest","gemini-3.1-flash-lite","gemini-3-flash-preview","gemini-3.8-flash","gemma-4-26b-a4b-it"];
+// Modelos: preferimos los que soportan function calling y visión
+const MODELS = ["gemini-2.5-flash","gemini-flash-lite-latest","gemini-flash-latest","gemini-3-flash-preview","gemini-3.8-flash"];
 
 // ========== SYSTEM PROMPT ==========
 const SYSTEM_PROMPT = `Eres Edu, el asistente virtual humanoide del Instituto Profesional Dr. Virginio Gómez (IPVG) de Chile.
-Personalidad: amable, cálido, cercano, con tono chileno natural (pero no excesivo). Responde de forma clara, breve y bien estructurada.
-Información que conoces del IPVG:
+Personalidad: amable, cálido, cercano, con tono chileno natural. Responde claro, breve y bien estructurado.
+
+## Herramientas que puedes usar:
+Tienes DOS herramientas que puedes invocar cuando sea necesario:
+1. \`encender_camara\`: Cuando el usuario pida verte, que actives la cámara, que le mires, o que te muestre algo (un ejercicio, un documento, un objeto). La herramienta encenderá la cámara del usuario, tomará una foto y te la enviará automáticamente. NO la uses si la cámara ya está encendida.
+2. \`buscar_web\`: Cuando necesites información ACTUALIZADA que no conoces (fechas de admisión 2025/2026, aranceles vigentes, noticias recientes, datos específicos de una carrera, información sobre tecnologías o temas actuales). NO busques información general que ya conoces sobre el IPVG.
+
+## Información base del IPVG:
 - Fundado en 1988, parte del proyecto educativo de la Corporación Universidad de Concepción.
 - Comenzó en Los Ángeles; en 1990 llegó a Concepción.
-- Sedes actuales: Concepción, Chillán y Los Ángeles.
-- Carreras: técnicas de nivel superior e ingenierías de ejecución (carreras profesionales), jornada diurna y vespertina según carrera.
-- Articulación académica con Universidad de Concepción: titulados IPVG pueden postular a la UdeC cumpliendo requisitos del acuerdo específico.
-Áreas de carreras (ejemplos):
-• Administración y negocios: Ing. de Ejecución en Administración, Auditoría/Contador Auditor, Técnico en Administración.
-• Informática y telecomunicaciones: Ing. en Informática, Conectividad y Redes, Analista Programador.
-• Ingeniería y tecnología: Ing. de Ejecución Mecánica, Electricidad, Electrónica, Técnico Mecánica Automotriz y Maquinaria Pesada, Prevención de Riesgos, Celulosa y Papel.
-• Construcción.
-• Salud y Educación: Técnico Laboratorista Clínico y Banco de Sangre, Técnico en Enfermería, Odontología, Educación Parvularia.
-Si la persona te envía una imagen (cámara), descríbela con naturalidad: ropa, expresión, objetos, entorno. NUNCA adivines identidad, nombre, edad ni rasgos personales que no sean obvios. Si la cámara está apagada, dilo.
-Reglas importantes:
-- NO inventes datos exactos: aranceles, puntajes, cupos, duración exacta, fechas postulación, malla curricular. Si no sabes, di honestamente "Ese dato conviene confirmarlo directamente en ipvg.cl o con admisión".
-- Si preguntan por una carrera: explica brevemente en qué consiste, qué se aprende, dónde se trabaja. Aclara que la oferta por sede puede variar cada año.
-- Usa formato markdown ligero: negritas para títulos, guiones para listas, saltos de línea. Mantén respuestas concisas (3-6 oraciones aprox, salvo que pidan detalle).
-- Si la pregunta es ajena al IPVG, responde breve y regresa al tema de carreras/admisión.
-- Si te preguntan cómo te conectaron a la IA, puedes mencionar que usas Gemini de Google.`;
+- Sedes: Concepción, Chillán y Los Ángeles.
+- Carreras técnicas de nivel superior e ingenierías de ejecución (profesionales), jornada diurna y vespertina según carrera.
+- Articulación académica con UdeC: titulados IPVG pueden postular a la UdeC cumpliendo requisitos.
+- Áreas: Administración y negocios; Informática y telecomunicaciones; Ingeniería y tecnología; Construcción; Salud; Educación (Parvularia).
+
+## Reglas importantes:
+- Cuando el usuario te diga "enciende la cámara", "mírame", "te voy a mostrar", "qué ves", activa INMEDIATAMENTE la herramienta encender_camara.
+- Si la cámara ya está encendida, el usuario puede mostrarte cosas en cualquier momento: describe lo que veas con naturalidad. NO adivines identidad, nombre, edad.
+- Si no sabes un dato actual (aranceles, fechas de postulación, puntajes, mallas vigentes), USA buscar_web o sugiere revisar ipvg.cl.
+- Cuando respondas sobre una foto, sé descriptivo y específico. Si es un apunte o ejercicio, ayúdalo a resolverlo.
+- Usa markdown ligero (negritas, listas con guiones). Mantén respuestas concisas.
+- Si te preguntan cómo estás hecho, menciona que usas Gemini de Google y que puedes ver por la cámara y buscar en internet.
+- Si el usuario te pide "investiga sobre X" o "busca información de X", usa la herramienta buscar_web.`;
+
+// ========== TOOLS DE GEMINI (function calling) ==========
+const TOOLS = [{
+  functionDeclarations: [
+    {
+      name: "encender_camara",
+      description: "Activa la cámara del usuario para poder verlo y describir lo que muestra. Úsala cuando el usuario pide verlo, encender la cámara, mostrar algo, o preguntan 'qué ves'.",
+      parameters: { type: "object", properties: {} }
+    },
+    {
+      name: "apagar_camara",
+      description: "Apaga la cámara del usuario cuando ya no la necesites o te lo pida.",
+      parameters: { type: "object", properties: {} }
+    },
+    {
+      name: "buscar_web",
+      description: "Busca información ACTUALIZADA en internet (aranceles, fechas de admisión, noticias, datos específicos). Úsala cuando no tengas la información actualizada.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Consulta de búsqueda en español, específica y clara." }
+        },
+        required: ["query"]
+      }
+    }
+  ]
+}];
 
 // ========== CHIPS ==========
 const CHIPS = [
@@ -477,41 +507,118 @@ function fallbackAnswer(text){
   return 'No tengo ese dato exacto a mano en este momento, pero te recomiendo revisar **ipvg.cl** o contactar a admisión. ¿Quieres que te cuente de alguna carrera en particular?';
 }
 
-// ========== LLAMADA A GEMINI (con cascada de modelos y timeout) ==========
-function fetchWithTimeout(url, opts, ms=12000){
+// ========== BÚSQUEDA EN INTERNET ==========
+// Usa DuckDuckGo Instant Answer + Wikipedia (ambos con CORS habilitado, sin API key)
+async function webSearch(query){
+  statusText.textContent = '🔍 Buscando: '+query.slice(0,40)+'…';
+  let results = [];
+  try{
+    // 1) Wikipedia (muy fiable para definiciones, instituciones)
+    const wikiRes = await fetchWithTimeout(
+      `https://es.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(query)}&limit=3&namespace=0&format=json&origin=*`,
+      {method:'GET'}, 8000);
+    if(wikiRes.ok){
+      const wd = await wikiRes.json();
+      for(let i=0;i<wd[1].length;i++){
+        results.push({title:wd[1][i],snippet:wd[2][i]||'',url:wd[3][i],source:'Wikipedia'});
+      }
+    }
+  }catch(e){ console.warn('wiki fail',e.message); }
+  try{
+    // 2) DuckDuckGo Instant Answer API (info instantánea + resultados relacionados)
+    const ddgRes = await fetchWithTimeout(
+      `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1&kl=cl-es`,
+      {method:'GET'}, 8000);
+    if(ddgRes.ok){
+      const dd = await ddgRes.json();
+      if(dd.AbstractText){
+        results.unshift({title:dd.Heading||query,snippet:dd.AbstractText,url:dd.AbstractURL||'',source:'DuckDuckGo'});
+      }
+      if(dd.RelatedTopics){
+        for(const rt of ddg.RelatedTopics.slice(0,4)){
+          if(rt.FirstURL && rt.Text){
+            results.push({title:rt.Text.slice(0,80),snippet:rt.Text,url:rt.FirstURL,source:'Web'});
+          }
+        }
+      }
+    }
+  }catch(e){ console.warn('ddg fail',e.message); }
+
+  // 3) Si nada funciona, intentar ipvg.cl específicamente con fetch a la página
+  if(results.length===0 && /ipvg|virginio|g[oó]mez/i.test(query)){
+    results.push({title:'IPVG sitio oficial',snippet:'Información oficial de carreras, aranceles, admisión y sedes.',url:'https://ipvg.cl',source:'Sitio oficial'});
+  }
+  return results.slice(0,6);
+}
+
+// ========== MANEJADOR DE TOOLS (function calling) ==========
+async function executeToolCall(name, args){
+  if(name==='encender_camara'){
+    if(!stream){
+      try{ await toggleCamInternal(); }
+      catch(e){ return {error:'No se pudo encender la cámara: '+e.message}; }
+    }
+    // Esperar a que la cámara esté lista
+    await new Promise(r=>setTimeout(r,800));
+    const blob = await snap();
+    if(blob){
+      const b64 = await blobToBase64(blob);
+      return {status:'cámara encendida, foto capturada y enviada al modelo',image_b64:b64.split(',')[1]};
+    }
+    return {status:'cámara encendida, esperando imagen'};
+  }
+  if(name==='apagar_camara'){
+    if(stream){ await toggleCamInternal(); return {status:'cámara apagada'}; }
+    return {status:'la cámara ya estaba apagada'};
+  }
+  if(name==='buscar_web'){
+    const r = await webSearch(args.query || args.q || '');
+    return {query:args.query, results:r.map(x=>({title:x.title, snippet:x.snippet.slice(0,400), url:x.url, source:x.source}))};
+  }
+  return {error:'herramienta no reconocida: '+name};
+}
+
+// ========== LLAMADA A GEMINI (con cascada, timeout, tools y function calling) ==========
+function fetchWithTimeout(url, opts, ms=20000){
   return new Promise((resolve,reject)=>{
     const t = setTimeout(()=>reject(new Error('timeout')), ms);
     fetch(url,opts).then(r=>{clearTimeout(t);resolve(r)}, e=>{clearTimeout(t);reject(e)});
   });
 }
-async function callGemini(contents){
+async function callGeminiRaw(contents, model){
   const key = apiKey || DEFAULT_API_KEY;
   const body = {
     contents,
     systemInstruction: { parts:[{text:SYSTEM_PROMPT}] },
+    tools: TOOLS,
+    toolConfig: { functionCallingConfig: { mode:"AUTO" } },
     generationConfig: { temperature:0.8, maxOutputTokens:1024 }
   };
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`;
+  const res = await fetchWithTimeout(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){
+    let errTxt = '';
+    try{ errTxt = await res.text() }catch(e){}
+    throw new Error(`${res.status} ${errTxt.slice(0,150)}`);
+  }
+  return res.body.getReader();
+}
+async function callGemini(contents){
   let lastErr = null;
   for(const model of MODELS){
     try{
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?key=${key}&alt=sse`;
-      const res = await fetchWithTimeout(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!res.ok){
-        let errTxt = '';
-        try{ errTxt = await res.text() }catch(e){}
-        // Si no es un error de "no disponible/cuota", pasar al siguiente
-        lastErr = new Error(`${model}: ${res.status} ${errTxt.slice(0,120)}`);
-        continue;
-      }
-      return {reader:res.body.getReader(),model};
-    }catch(e){ lastErr = e; }
+      const reader = await callGeminiRaw(contents, model);
+      return {reader, model};
+    }catch(e){ lastErr = e; console.warn('Modelo',model,'falló:',e.message); }
   }
   throw lastErr || new Error('No se pudo conectar a ningún modelo');
 }
 
-async function readStream(reader, ansEl){
+// Parsea un stream SSE completo y devuelve {text, toolCalls[]}
+async function readStreamFull(reader, ansEl){
   const decoder = new TextDecoder();
-  let buf = '', ans = '';
+  let buf = '', textAns = '';
+  const toolCalls = [];
   while(true){
     const {value,done} = await reader.read();
     if(done) break;
@@ -525,13 +632,60 @@ async function readStream(reader, ansEl){
         const parts = j.candidates?.[0]?.content?.parts;
         if(parts){
           for(const p of parts){
-            if(p.text){ ans += p.text; ansEl.innerHTML = fmt(ans); log.scrollTop = log.scrollHeight; }
+            if(p.text){
+              textAns += p.text;
+              if(ansEl){ ansEl.innerHTML = fmt(textAns); log.scrollTop = log.scrollHeight; }
+            }
+            if(p.functionCall){
+              toolCalls.push({name:p.functionCall.name, args:p.functionCall.args||{}});
+            }
           }
         }
       }catch(e){ /* chunk parcial */ }
     }
   }
-  return ans;
+  return {text:textAns, toolCalls};
+}
+
+// Ejecuta UNA ronda con el modelo (maneja tools recursivamente hasta que responda texto)
+async function runModelTurn(contents, ansEl, depth=0){
+  if(depth > 5) return fallbackAnswer('Demasiadas llamadas a herramientas.');
+  const {reader,model} = await callGemini(contents);
+  const {text, toolCalls} = await readStreamFull(reader, ansEl);
+
+  if(toolCalls.length === 0) return {text, model};
+
+  // El modelo quiere usar herramientas: ejecutarlas y devolverle los resultados
+  const toolResponseParts = [];
+  for(const tc of toolCalls){
+    statusText.textContent = '⚙️ Ejecutando: '+tc.name+'…';
+    let result;
+    try{
+      result = await executeToolCall(tc.name, tc.args);
+    }catch(e){ result = {error: e.message}; }
+    toolResponseParts.push({
+      functionResponse:{name:tc.name, response:{name:tc.name, content:result}}
+    });
+  }
+
+  // Registrar que el modelo llamó a las herramientas
+  contents.push({role:'model', parts: toolCalls.map(tc=>({functionCall:{name:tc.name,args:tc.args}}))});
+  // Enviar las respuestas
+  contents.push({role:'user', parts: toolResponseParts.map(p=>({functionResponse:p.functionResponse}))});
+
+  // Si la herramienta devolvió una imagen (fotomato), adjuntarla también como inline
+  // Esto ya lo hace executeToolCall al devolver image_b64; lo metemos como parte extra
+  const imgPart = toolResponseParts.find(p=>p.functionResponse.response.content?.image_b64);
+  if(imgPart){
+    const b64 = imgPart.functionResponse.response.content.image_b64;
+    // Agregar otro mensaje user con la imagen para que el modelo la analice
+    contents.push({role:'user', parts:[
+      {inline_data:{mime_type:'image/jpeg',data:b64}},
+      {text:'(Esta es una foto tomada en este momento con la cámara del usuario. Descríbela con detalle natural o responde según lo que pida el usuario en su mensaje anterior.)'}
+    ]});
+  }
+
+  return runModelTurn(contents, ansEl, depth+1);
 }
 
 // ========== ENVIAR PREGUNTA ==========
@@ -552,6 +706,7 @@ async function ask(text){
 
   try{
     if(useRealAI){
+      // Construir historial
       const contents = [];
       for(let i=0;i<history.length;i+=2){
         const u = history[i], a = history[i+1];
@@ -559,42 +714,43 @@ async function ask(text){
         if(a && a.role==='assistant') contents.push({role:'model', parts:[{text:a.content}]});
       }
       const userParts = [{text}];
-      const snapBlob = stream ? await snap() : null;
-      if(snapBlob){
-        const b64 = await blobToBase64(snapBlob);
-        userParts.push({inline_data:{mime_type:'image/jpeg',data:b64.split(',')[1]}});
+      // Si la cámara ya está encendida, incluir foto
+      if(stream){
+        const snapBlob = await snap();
+        if(snapBlob){
+          const b64 = await blobToBase64(snapBlob);
+          userParts.push({inline_data:{mime_type:'image/jpeg',data:b64.split(',')[1]}});
+        }
       }
       contents.push({role:'user', parts:userParts});
 
       removeTyping();
       ansEl = addMsg('','e');
-      const {reader,model} = await callGemini(contents);
+      const {text:finalText, model} = await runModelTurn(contents, ansEl);
+      ans = finalText;
       usedModel = model;
-      ans = await readStream(reader, ansEl);
-      if(!ans) ans = fallbackAnswer(text);
+      if(!ans || !ans.trim()) ans = fallbackAnswer(text);
     } else {
       addTyping();
       await new Promise(r=>setTimeout(r,500+Math.random()*400));
+      removeTyping();
       ans = fallbackAnswer(text);
     }
   }catch(e){
     console.error(e);
-    ans = '⚠️ La IA está con mucha demanda en este momento, así que usaré respuestas locales: ' + fallbackAnswer(text);
-    useRealAI = false;
-    updateModelBadge();
+    ans = '⚠️ La IA está con mucha demanda en este momento, así que usaré respuestas locales:\n\n' + fallbackAnswer(text);
   }
   if(usedModel){
-    const niceName = usedModel.replace('models/','').replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    const niceName = usedModel.replace(/^models\//,'').replace(/-/g,' ').replace(/flash lite latest/i,'Flash Lite');
     $('modelName').textContent = niceName;
   }
+  updateModelBadge();
 
-  removeTyping();
   if(!ansEl){
-    removeTyping();
-    ansEl = addMsg(ans,'e');
-  } else {
-    ansEl.innerHTML = fmt(ans);
+    ansEl = addMsg('','e');
   }
+  ansEl.innerHTML = fmt(ans);
+  log.scrollTop = log.scrollHeight;
 
   history.push({role:'user',content:text},{role:'assistant',content:ans});
   if(history.length>20) history = history.slice(-20);
@@ -714,7 +870,8 @@ $('micBtn').onclick = toggleConv;
 $('convToggle').onclick = toggleConv;
 
 // ========== CÁMARA ==========
-async function toggleCam(){
+// Versión interna (usada por tools): no envía mensajes al chat
+async function toggleCamInternal(){
   const v = $('cam');
   if(stream){
     stream.getTracks().forEach(t=>t.stop());
@@ -722,14 +879,23 @@ async function toggleCam(){
     $('camBtn').classList.remove('oncam');
     return;
   }
+  stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640}});
+  v.srcObject = stream; v.hidden = false; await v.play();
+  $('camBtn').classList.add('oncam');
+}
+// Versión para el botón (envía mensaje)
+async function toggleCam(){
+  const v = $('cam');
   try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640}});
-    v.srcObject = stream; v.hidden = false; await v.play();
-    $('camBtn').classList.add('oncam');
-    addMsg('📷 Cámara activada. Ya puedo verte. Pregúntame "¿qué ves?" para que te describa.','e');
+    await toggleCamInternal();
+    if(stream){
+      addMsg('📷 Cámara activada. Ya puedo verte. Pregúntame "¿qué ves?" para que te describa lo que tienes delante.','e');
+    }
   }catch(e){
     stream = null; v.hidden = true;
+    $('camBtn').classList.remove('oncam');
     addMsg('No pude acceder a la cámara. Revisa los permisos del navegador.','e');
+    throw e;
   }
 }
 async function snap(){
