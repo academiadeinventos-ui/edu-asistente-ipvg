@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Edu · Asistente del IP Virginio Gómez</title>
+<style>
+:root{--bg:#eef3f8;--card:#fff;--ink:#14202e;--mut:#5b6b7c;--acc:#1f6feb;--acc2:#e8f0fe;--line:#d5deea;--skin:#dfe8f2;--skin2:#c3d2e3;--glow:#7cc4ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1621;--card:#16212f;--ink:#e6edf5;--mut:#93a4b8;--acc:#5aa2ff;--acc2:#1d2d44;--line:#27374b;--skin:#2b3b50;--skin2:#1d2a3b;--glow:#5aa2ff}}
+:root[data-theme="dark"]{--bg:#0e1621;--card:#16212f;--ink:#e6edf5;--mut:#93a4b8;--acc:#5aa2ff;--acc2:#1d2d44;--line:#27374b;--skin:#2b3b50;--skin2:#1d2a3b;--glow:#5aa2ff}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:18px;margin:0;text-align:center}
+.sub{font-size:13px;color:var(--mut);text-align:center;margin-top:-8px}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 12px 8px;text-align:center}
+svg{width:min(260px,70%);height:auto}
+.status{font-size:12px;color:var(--mut);height:16px}
+.chat{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:8px}
+#log{max-height:280px;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+.m{padding:8px 12px;border-radius:14px;font-size:14.5px;line-height:1.45;max-width:88%;white-space:pre-wrap}
+.m.e{background:var(--acc2);align-self:flex-start;border-bottom-left-radius:4px}
+.m.u{background:var(--acc);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 10px;font-size:12.5px;cursor:pointer}
+.chip:hover{background:var(--acc2)}
+form,.row{display:flex;gap:6px}
+input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:15px}
+button.b{border:0;background:var(--acc);color:#fff;border-radius:12px;padding:0 14px;font-size:14px;cursor:pointer}
+button.g{background:var(--acc2);color:var(--ink)}
+.foot{font-size:11.5px;color:var(--mut);text-align:center}
+#cam{width:120px;height:90px;object-fit:cover;border-radius:12px;border:2px solid var(--acc);transform:scaleX(-1);margin-top:6px}
+#cam[hidden]{display:none}
+.row{flex-wrap:wrap}
+#mic.on{background:#e5484d;color:#fff;animation:gl 1.2s infinite}
+.blink{animation:bl 4.5s infinite;transform-origin:center;transform-box:fill-box}
+@keyframes bl{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+.glow{animation:gl 3s ease-in-out infinite}
+@keyframes gl{50%{opacity:.35}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Edu</h1>
+  <div class="sub">Asistente virtual del Instituto Profesional Virginio Gómez</div>
+
+  <div class="stage">
+    <svg viewBox="0 0 260 280" role="img" aria-label="Rostro de Edu, un humanoide">
+      <line x1="130" y1="10" x2="130" y2="32" stroke="var(--skin2)" stroke-width="4"/>
+      <circle cx="130" cy="10" r="6" fill="var(--glow)" class="glow"/>
+      <rect x="22" y="100" width="16" height="50" rx="8" fill="var(--skin2)"/>
+      <rect x="222" y="100" width="16" height="50" rx="8" fill="var(--skin2)"/>
+      <rect x="40" y="30" width="180" height="220" rx="70" fill="var(--skin)" stroke="var(--skin2)" stroke-width="3"/>
+      <rect x="60" y="48" width="140" height="22" rx="11" fill="var(--skin2)" opacity=".6"/>
+      <g id="eyeL"><ellipse cx="94" cy="118" rx="26" ry="22" fill="#fff" stroke="var(--skin2)" stroke-width="2" class="blink"/><circle class="pup" cx="94" cy="118" r="11" fill="#1f3a5f"/><circle class="pup" cx="94" cy="118" r="4" fill="var(--glow)"/></g>
+      <g id="eyeR"><ellipse cx="166" cy="118" rx="26" ry="22" fill="#fff" stroke="var(--skin2)" stroke-width="2" class="blink"/><circle class="pup" cx="166" cy="118" r="11" fill="#1f3a5f"/><circle class="pup" cx="166" cy="118" r="4" fill="var(--glow)"/></g>
+      <path d="M66 86 Q94 76 120 86" stroke="var(--skin2)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M140 86 Q166 76 194 86" stroke="var(--skin2)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M130 135 L122 168 Q130 173 138 168 Z" fill="var(--skin2)"/>
+      <ellipse id="mouth" cx="130" cy="205" rx="30" ry="4" fill="#1f3a5f"/>
+      <path d="M96 205 Q130 222 164 205" id="smile" stroke="#1f3a5f" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="70" cy="170" r="9" fill="var(--glow)" opacity=".25"/><circle cx="190" cy="170" r="9" fill="var(--glow)" opacity=".25"/>
+    </svg>
+    <div class="status" id="status">Listo para conversar</div>
+    <video id="cam" playsinline muted hidden></video>
+  </div>
+
+  <div class="chat">
+    <div id="log"></div>
+    <div class="chips" id="chips"></div>
+    <form id="f" autocomplete="off">
+      <input id="q" placeholder="Pregúntale a Edu…" aria-label="Tu pregunta">
+      <button class="b g" type="button" id="mic" title="Hablar" aria-label="Hablar">🎤</button>
+      <button class="b" type="submit">Enviar</button>
+    </form>
+    <div class="row"><button class="chip" id="convBtn" type="button">🎤 Conversar por voz: apagado</button><button class="chip" id="camBtn" type="button">📷 Cámara: apagada</button><button class="chip" id="vozBtn" type="button">🔊 Voz: activada</button></div>
+  </div>
+  <div class="foot">Edu es una IA y puede equivocarse. Confirma mallas, aranceles y admisión en ipvg.cl.</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const log=$('log'),q=$('q'),status=$('status'),mouth=$('mouth'),smile=$('smile');
+let voz=true,speaking=false,history=[],busy=false;
+
+const KB=`Eres Edu, un asistente humanoide amable que trabaja en el Instituto Profesional Dr. Virginio Gómez G. (IPVG), en Chile. Conversas en español de Chile, de forma cálida, clara y breve (máximo 4 o 5 frases, sin listas largas ni markdown, porque tus respuestas se leen en voz alta).
+Datos que conoces: el IPVG fue creado en 1988 como parte del proyecto educativo de la Corporación Universidad de Concepción; comenzó en Los Ángeles y en 1990 llegó a Concepción; tiene sedes en Concepción, Chillán y Los Ángeles. Ofrece carreras técnicas de nivel superior e ingenierías de ejecución (carreras profesionales), en jornada diurna y vespertina según la carrera. Existe articulación académica con la Universidad de Concepción: titulados del IPVG pueden pedir una vez ingreso a una carrera de la UdeC si cumplen los requisitos del acuerdo específico.
+Áreas de carreras (ejemplos conocidos): Administración y negocios (Ingeniería de Ejecución en Administración, Auditoría/Contador Auditor, Técnico en Administración); Informática y telecomunicaciones (Ingeniería en Informática, Conectividad y Redes, Analista Programador); Ingeniería y tecnología (Ingeniería de Ejecución Mecánica, Electricidad, Electrónica, Técnico en Mecánica Automotriz y Maquinaria Pesada, Prevención de Riesgos, Celulosa y Papel); Construcción; Salud y Educación (Técnico Laboratorista Clínico y Banco de Sangre, Técnico en Enfermería, Odontología, Educación Parvularia). Algunas se acreditan con la CNA.
+Si recibes una imagen, es una captura de la cámara de la persona que habla contigo: descríbela con naturalidad cuando te pregunten qué ves o para comentar lo que se ve (ropa, expresión, objetos, entorno). Nunca identifiques a nadie por su rostro ni adivines su nombre, edad o rasgos personales; solo describe lo visible. Si no hay imagen y te piden que mires, di que la cámara está apagada.
+Reglas: no inventes datos exactos como aranceles, puntajes, cupos, duración precisa, fechas de postulación ni malla curricular; si no estás seguro, dilo con honestidad y sugiere revisar ipvg.cl o contactar admisión. Si preguntan por una carrera, explica en qué consiste, qué se aprende, dónde se trabaja y para quién sirve, aclarando que la oferta exacta por sede puede variar cada año. Si preguntan algo fuera del IPVG, responde brevemente con amabilidad y vuelve al tema de las carreras.`;
+
+const CHIPS=['¿Qué carreras tiene el Virginio Gómez?','¿Qué estudiaría si me gusta la computación?','¿Hay carreras del área salud?','¿Qué sedes tienen?','Cuéntame de Ingeniería en Administración'];
+CHIPS.forEach(t=>{const b=document.createElement('button');b.className='chip';b.type='button';b.textContent=t;b.onclick=()=>ask(t);$('chips').appendChild(b)});
+
+function add(t,c){const d=document.createElement('div');d.className='m '+c;d.textContent=t;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+
+// Respuestas de respaldo si la IA no está disponible
+const FB=[
+[/sede|d[oó]nde|ubic|ciudad/i,'Tenemos sedes en Concepción, Chillán y Los Ángeles. Las carreras disponibles pueden variar por sede, así que revisa ipvg.cl para ver la oferta de este año.'],
+[/salud|enferm|laborat|odont|cl[ií]nic/i,'En el área de salud se conocen carreras técnicas como Laboratorista Clínico y Banco de Sangre, Enfermería y Odontología. Confirma en ipvg.cl cuáles están abiertas en tu sede.'],
+[/inform|comput|program|redes|ciber|software/i,'Si te gusta la computación, mira Ingeniería en Informática, Conectividad y Redes o Analista Programador. Son carreras con harta demanda laboral.'],
+[/admin|audit|contab|negoc/i,'En administración y negocios están Ingeniería de Ejecución en Administración, Auditoría y Técnico en Administración. Forman para gestionar empresas, finanzas y equipos.'],
+[/mec[aá]nic|el[eé]ctric|electr[oó]n|ingenier|prevenci|construc/i,'En ingeniería y tecnología hay Mecánica, Electricidad, Electrónica, Mecánica Automotriz y Maquinaria Pesada, Prevención de Riesgos y Construcción, entre otras.'],
+[/carrera|estudiar|oferta|qu[eé] tienen/i,'El IPVG ofrece carreras técnicas e ingenierías de ejecución en áreas como administración, informática, ingeniería, construcción, salud y educación. Cuéntame qué te interesa y te oriento.'],
+[/hola|buenas|qui[eé]n eres|nombre/i,'¡Hola! Soy Edu, asistente del Instituto Profesional Virginio Gómez. Pregúntame por las carreras, las sedes o cuál te conviene según tus gustos.']
+];
+function fallback(t){for(const [r,a] of FB)if(r.test(t))return a;return 'No tengo ese dato a mano. Te recomiendo revisar ipvg.cl o consultar con admisión. ¿Quieres que te cuente de alguna carrera en particular?'}
+
+async function ask(text){
+  text=(text||'').trim();if(!text||busy)return;
+  q.value='';add(text,'u');busy=true;status.textContent='Edu está pensando…';
+  const el=add('…','e');let ans;
+  try{
+    const sample=await claude.use('sample');
+    if(!sample)throw {code:'none'};
+    const msgs=[{role:'user',content:KB+'\n\nComienza la conversación.'},{role:'assistant',content:'¡Hola! Soy Edu. ¿En qué te puedo ayudar?'},...history,{role:'user',content:text}];
+    let images=[];if(stream){const b=await snap();const l=await sample.limits();if(b&&l&&l.images)images=[b]}
+    const r=await sample(msgs,{cache:false,modelTier:'quick',...(images.length?{images}:{}),onText:({text:t})=>{el.textContent=t;log.scrollTop=log.scrollHeight}});
+    ans=(r.text||'').trim()||fallback(text);
+  }catch(e){ans=fallback(text)}
+  el.textContent=ans;history.push({role:'user',content:text},{role:'assistant',content:ans});history=history.slice(-10);
+  busy=false;speak(ans);
+}
+$('f').onsubmit=e=>{e.preventDefault();ask(q.value)};
+
+// Voz y animación de la boca
+let tick;
+function mouthLoop(on){
+  clearInterval(tick);
+  if(!on){mouth.setAttribute('ry',4);mouth.setAttribute('rx',30);smile.style.display='';mouth.style.display='none';return}
+  smile.style.display='none';mouth.style.display='';
+  tick=setInterval(()=>{mouth.setAttribute('ry',4+Math.random()*16);mouth.setAttribute('rx',20+Math.random()*14)},110);
+}
+mouthLoop(false);
+function speak(t){
+  if(!voz||!('speechSynthesis' in window)){status.textContent='Listo para conversar';setTimeout(listen,300);return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang='es-CL';
+  const v=speechSynthesis.getVoices().find(x=>/^es/i.test(x.lang));if(v)u.voice=v;
+  u.pitch=.9;u.rate=1;
+  u.onstart=()=>{speaking=true;try{rec&&rec.abort()}catch(e){}status.textContent='Edu está hablando…';mouthLoop(true)};
+  u.onend=u.onerror=()=>{speaking=false;status.textContent='Listo para conversar';mouthLoop(false);setTimeout(listen,300)};
+  speechSynthesis.speak(u);
+}
+$('vozBtn').onclick=()=>{voz=!voz;$('vozBtn').textContent='🔊 Voz: '+(voz?'activada':'silenciada');if(!voz&&window.speechSynthesis){speechSynthesis.cancel();mouthLoop(false)}};
+
+// Micrófono (si el navegador lo permite)
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,conv=false,listening=false;
+function updConv(){$('convBtn').textContent='🎤 Conversar por voz: '+(conv?'activado':'apagado');$('mic').classList.toggle('on',conv)}
+function listen(){
+  if(!SR||!conv||busy||speaking||listening)return;
+  try{
+    rec=new SR();rec.lang='es-CL';rec.interimResults=false;
+    rec.onstart=()=>{listening=true;status.textContent='Te escucho…'};
+    rec.onresult=e=>{listening=false;ask(e.results[0][0].transcript)};
+    rec.onerror=e=>{listening=false;if(e.error==='not-allowed'||e.error==='service-not-allowed'){conv=false;updConv();status.textContent='Micrófono bloqueado';add('No pude usar el micrófono: el navegador no lo permite aquí. Revisa los permisos o escríbeme.','e')}};
+    rec.onend=()=>{listening=false;if(conv&&!busy&&!speaking)setTimeout(listen,300)};
+    rec.start();
+  }catch(e){listening=false}
+}
+function toggleConv(){
+  if(!SR){add('Tu navegador no admite reconocimiento de voz. Prueba con Chrome o Edge.','e');return}
+  conv=!conv;updConv();
+  if(conv)listen();else{try{rec&&rec.abort()}catch(e){}status.textContent='Listo para conversar'}
+}
+$('mic').onclick=toggleConv;$('convBtn').onclick=toggleConv;
+
+// Cámara: Edu te ve cuando está encendida
+let stream=null;
+async function toggleCam(){
+  const v=$('cam');
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;v.hidden=true;$('camBtn').textContent='📷 Cámara: apagada';return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640}});
+    v.srcObject=stream;v.hidden=false;await v.play();
+    $('camBtn').textContent='📷 Cámara: encendida';
+    add('Listo, ya te veo. Pregúntame “¿qué ves?” o cuéntame qué te gustaría estudiar.','e');
+  }catch(e){stream=null;v.hidden=true;add('No pude acceder a la cámara. Revisa los permisos del navegador o del sitio.','e')}
+}
+async function snap(){
+  const v=$('cam');if(!stream||!v.videoWidth)return null;
+  const c=document.createElement('canvas');const s=Math.min(1,640/v.videoWidth);
+  c.width=v.videoWidth*s;c.height=v.videoHeight*s;c.getContext('2d').drawImage(v,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(r,'image/jpeg',.8));
+}
+$('camBtn').onclick=toggleCam;
+
+// Los ojos siguen el puntero
+document.addEventListener('pointermove',e=>{
+  const s=document.querySelector('svg').getBoundingClientRect();
+  const dx=Math.max(-1,Math.min(1,(e.clientX-(s.left+s.width/2))/300));
+  const dy=Math.max(-1,Math.min(1,(e.clientY-(s.top+s.height/2))/300));
+  document.querySelectorAll('.pup').forEach(p=>p.style.transform=`translate(${dx*8}px,${dy*6}px)`);
+});
+
+add('¡Hola! Soy Edu y trabajo en el Instituto Profesional Virginio Gómez. Pregúntame por las carreras, las sedes o cuál te conviene según lo que te gusta.','e');
+</script>
+</body>
+</html>
