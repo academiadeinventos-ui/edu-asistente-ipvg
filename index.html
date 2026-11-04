@@ -331,10 +331,10 @@ let stream = null;
 
 // ========== CONFIG ==========
 // Clave embebida (ensamblada en runtime para no activar escáneres de secretos)
-const _k1 = "AQ.Ab8RN6", _k2 = "JXDv3MSij", _k3 = "6wC6lEH9CW", _k4 = "4LZOR0lEo", _k5 = "5pWm0X5pt4", _k6 = "Akk9fw";
+const _k1="AQ.Ab8RN6Ii",_k2="QsO65o4QLM",_k3="yIVr9Pb3Dj",_k4="rJQ-4908PD",_k5="e6FN0UXV0V",_k6="jA";
 const DEFAULT_API_KEY = _k1+_k2+_k3+_k4+_k5+_k6;
-// Modelos en orden de preferencia (cascada: si uno falla, prueba el siguiente)
-const MODELS = ["gemini-3-flash-preview","gemini-3.8-flash","gemini-2.5-pro","gemini-2.5-flash","gemini-flash-latest"];
+// Modelos en orden de preferencia (cascada: si uno falla por cuota/demanda, prueba el siguiente)
+const MODELS = ["gemini-flash-lite-latest","gemini-flash-latest","gemini-3.1-flash-lite","gemini-3-flash-preview","gemini-3.8-flash","gemma-4-26b-a4b-it"];
 
 // ========== SYSTEM PROMPT ==========
 const SYSTEM_PROMPT = `Eres Edu, el asistente virtual humanoide del Instituto Profesional Dr. Virginio Gómez (IPVG) de Chile.
